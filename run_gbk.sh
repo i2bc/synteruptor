@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Copyright 2023 Matthieu Barba
-# This program is free software under GPLv3 license
+# This program is free software under AGPLv3 license
 # License terms are in the LICENSE file, or at <http://www.gnu.org/licenses/>.
 
 # Stop with any error
