@@ -1,0 +1,65 @@
+SYNTERUPTOR automatization
+(Blast + database creation)
+
+Overview:
+In order to compute the data on a different server (named REMOTE here) that the webserver (named LOCAL here), the files are placed in a directory shared with both ("autoshared"). The computations are done on the REMOTE with scripts started with cron, and the data is saved in the shared directory. The server on LOCAL can then read and use those files.
+
+1) Servers
+LOCAL hosts the webserver and the synteruptor databases (in the db/ directory), REMOTE computes the synteruptor database.
+
+2) Directories
+The directory "autoshared" is located in LOCAL and remotely mounted in REMOTE using sshfs.
+
+"autoshared" includes 2 directories:
+- migenis_create_db: where the genomes files are uploaded (from the webpage "created_db.php"), and the computed synteruptor database saved
+- migenis_blast: hosts the sequence files uploaded (from the webpage "search.php"), used to blast a database
+
+- Both directories contain a list of temp directories created by the webserver for each instance. E.g. a user starts a blast search -> a directory is created (with mktemp). The name of the directory thus created is used as the identifier of the blast search, or of the database creation.
+- In each temp directory the webserver also created a config file (in json format for the create_migenis dir) which contains all the information about the process, including its current status (started, done, error...).
+
+3) Computations
+The computation of the data are done on REMOTE.
+
+They are started via cron (every minute) with a shell script for each process: "auto_migenis.sh" to create a database, "auto_blaster.sh" to blast a database.
+
+The process of both scripts is similar:
+- Every minute, the script starts, via cron.
+- First it searches for a lock file; if there is none, it creates it; otherwise the script stops so that only one script is running at a time.
+- it then scans its directory (migenis_create_db for auto_migenis.sh, migenis_blast for auto_blaster.sh) and looks at the status of the config files in each temp dir: if the status is "ready", the computation is performed on the data in the directory.
+
+a) Database creation
+"auto_migenis.sh" starts the synteruptor scripts on the data. The data is first copied in a temp dir (in tmp/). When it ends, the script copies back the created database, a fasta of the database, and it updates the status of the computation ("done").
+
+The script "auto_mailer.sh" helps the database creation by sending a mail at the Site admin and at the user when a job stars.
+It also copies the database and database fasta in the webserver db/ directory, to be used in the webserver. The name of the database file (xxxx.sqlite) is used as identifier of this database.
+Note: this script is the only one running on "LOCAL", because it has to copy files in the webserver directory.
+
+b) Blast search
+"auto_blaster.sh" functions in the same manner, but it is simpler (no mail or file copy). When the computation is done, the blast result is copied back in the temp dir and the status file ("status.txt") is updated.
+
+The webpage displays the result when the status is set to "done".
+
+4) Files overview
+- auto_migenis.sh: script run on REMOTE, checks every temp file and create a database if the status is ready.
+- auto_blaster.sh: same with blast.
+- auto_mailer.sh: script run on LOCAL, sends an e-mail to the user and the admin at the start and end of the database creation. Also copies the final database in the webserver db dir.
+- conf_file.pl: script used to read config data from a json file (format used by the database creation script)
+
+5) Crontab overview
+
+Cron on REMOTE:
+# Run the database creation (with log)
+* * * * * ~/src/autowork/auto_migenis.sh
+# Run the blast (with log)
+* * * * * ~/src/autowork/auto_blaster.sh
+# Cleans the blast directory by deleting dirs older than 1 day
+0 0 * * * find $HOME/autoshared/migenis_blast/blast_* -ctime +1 -type d -exec rm -r {} \; 2>> ~/logs/autoblast.clean
+# Cleans the database directory by deleting dirs older than 1 week
+0 0 * * * find $HOME/autoshared/migenis_create_db/mgn* -ctime +7 -type d -exec rm -r {} \; 2>> ~/logs/autowork.clean
+
+NOTE: the final databases created are copied in the db/ directory of the webserver: those are not cleaned by this cron.
+
+Cron on LOCAL:
+# Run the mail sender/file copier
+* * * * * ~/src/autowork/auto_mailer.sh
+

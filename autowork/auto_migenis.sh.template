@@ -1,0 +1,108 @@
+#!/bin/bash --login
+# This script checks the status of all migenis_create_db requests
+# If the status is "waiting", then it starts a migenis job
+# When the job finishes, the status turns to 'done' or 'failed'
+# The whole dir is locked while migenis is running so that
+# only one job is running at a time
+
+# This script should be run by crontab on the working machine
+
+set -ue
+###################################################################################################
+# DIRECTORIES
+
+# Path to the Synteruptor repo that contains its scripts
+synteruptor_dir=
+
+# Where to look for new new data to process
+# This is where the website should put the files uploaded by users
+work_dir=
+
+###################################################################################################
+
+if [ -z "$synteruptor_dir" ]; then
+    echo "Synteruptor dir is missing"
+    exit 1
+fi
+
+if [ -z "$work_dir" ]; then
+    echo "Work dir is missing"
+    exit 1
+fi
+
+# Set up Environment
+config="$synteruptor_dir/autowork/conf_file.pl"
+PATH=$PATH:"$synteruptor_dir"
+tmpdir="/tmp"
+
+# Status file
+stats=`find $work_dir -name "conf.txt"`
+
+# Lock file so that only one job can run at any given time
+if [ -e "$work_dir/LOCK" ]; then
+    echo "Locked";
+    exit;
+else
+    echo "WORKING" > "$work_dir/LOCK"
+fi
+
+# Move to tmp to work
+cd $tmpdir
+for s in $stats; do
+    cur=`$config $s status`
+    datadir=`dirname $s`
+    btol=`$config $s blocks_tolerance`
+    author=`$config $s author`
+    descrip=`$config $s description`
+    name=`basename $datadir`
+    # Check status of each job
+    if [ "$cur" == "waiting_ready" ]; then
+        # Update status
+        echo "Start migenis run for $s (waiting_ready -> ongoing)"
+        $config $s "status" "ongoing"
+
+        # Make a temp dir to work in
+        workdir=`mktemp -d migenis_XXXXXXXX`
+
+        # Copy the necessary Genbank files and uncompress
+        cp $datadir/*.gb* $workdir
+        # Uncompress gz and zip files if necessary
+        gzip -dv $workdir/*.gz 2> /dev/null
+        #unzip -d $workdir $workdir/*.zip
+        find $workdir -name '*.zip' -exec unzip -d $workdir {} \;
+        find $workdir -name '*.zip' -exec rm -f {} \;
+        ls -l $workdir
+
+        # Additional parameters?
+        optp=""
+        if [ -n "$btol" ]; then
+            optp="-p "$btol
+        fi
+
+        # Run the creation of the Migenis database
+        time -p run_gbk.sh -i "$workdir" -n "$name" $optp -A "$author" -N "$descrip"
+
+        # Check success
+        if [ $? -eq 0 ]; then
+            # Success: copy back the results
+            cp "$workdir/$name".* $datadir/
+
+            # Don't forget to give permission so that www-data can move the files
+            chmod a+rw "$datadir/$name".*
+            
+            # Update job status
+            $config $s "status" "built"
+
+            # Delete temp dir
+            rm $tmpdir/$workdir/* -f
+            rmdir $workdir
+        else
+            # Failed
+            $config $s "status" "failed"
+        fi
+        echo "Final status: " $($config $s status)
+    fi
+done
+# Unlock
+rm "$work_dir/LOCK" -f
+

@@ -1,0 +1,73 @@
+#!/bin/bash --login
+
+# This script checks the status of all migenis_blast requests
+# If the status is "waiting", then it starts a blast job
+# When the job finishes, the status turns to 'done' or 'failed'
+# The whole dir is locked while the blast is running so that
+# only one job is running at a time
+
+# This script should be run by crontab on the working machine
+
+set -ue
+###################################################################################################
+# DIRECTORIES
+
+# Where to look for new new data to process
+# This is where the website should put the files uploaded by users
+work_dir=
+
+###################################################################################################
+if [ -z "$work_dir" ]; then
+    echo "Work dir is missing"
+    exit 1
+fi
+
+# Check lock on dir
+if [ -e "$work_dir/LOCK" ]; then
+    exit
+else
+    echo "WORKING" > "$work_dir/LOCK"
+fi
+
+# Look for all the jobs with a status file
+stats=`find $work_dir -name "status.txt"`
+
+for s in $stats; do
+
+    # Check the current status
+    cur=`cat $s`
+
+    # Start a job!
+    if [ "$cur" == "waiting" ]; then
+        echo "Starting blast job for $s (waiting -> ongoing)"
+
+        # Change status
+        echo "ongoing" > $s
+
+        datadir=`dirname $s`
+        name=`basename $datadir`
+
+        # Prepare the files
+        query="$datadir/query.faa"
+        db="$datadir/db.faa"
+        result="$datadir/result.txt"
+
+        # Run the blast
+        echo "Make blast db"
+        makeblastdb -dbtype prot -in $db 1>&2 2>/dev/null
+        echo "Run blastp"
+        time -p blastp -db $db -query $query -evalue 10E-10 -outfmt 6 -out $result 1>&2 2> /dev/null
+
+        # Check for error and change the status
+        if [ $? -eq 0 ]; then
+            echo "done" > $s
+        else
+            echo "failed" > $s
+        fi
+        echo "Final status:" $(cat $s)
+    fi
+done
+
+# Remove lock on dir
+rm "$work_dir/LOCK" -f
+

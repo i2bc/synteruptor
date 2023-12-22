@@ -1,0 +1,117 @@
+#!/bin/bash --login
+
+# This script starts migenis jobs and finalize them
+# 1) For each job it first checks that the status is 'waiting'
+# 2) It then sends a mail (if configured to) to both the user and the admin
+# 3) the status is changed to 'waiting_ready'; this is a flag for
+#    migenis to start on the working machine
+# 4) Once Migenis has run, the status should be 'built' or 'failed'
+# 5) If it failed, it sends a mail to the admin
+# 6) If it worked, it copies the generated dbs (migenis + blast) to the Migenis web db dir
+# 7) Finally it sends a mail to both admin and user with a link to the web page
+#    of the new db
+
+# This script should be run by crontab on the webserver machine
+
+###################################################################################################
+# DIRECTORIES
+
+# Path to the Synteruptor repo that contains its scripts
+synteruptor_dir=
+
+# Where to look for new new data to process
+# This is where the website should put the files uploaded by users
+work_dir=
+
+# Path to the place the dbs (both Synteruptor db and blast) where the website can find them
+dbdir=
+
+# Address where to send a CC mail for admin purpose
+synteruptor_mail=
+
+# URL of the website, to form addresses to include in the email
+host=
+
+###################################################################################################
+
+if [ -z "$synteruptor_dir" ]; then
+    echo "Synteruptor dir is missing"
+    exit 1
+fi
+
+if [ -z "$work_dir" ]; then
+    echo "Work dir is missing"
+    exit 1
+fi
+
+if [ -z "$dbdir" ]; then
+    echo "DB dir is missing"
+    exit 1
+fi
+
+if [ -z "$host" ]; then
+    echo "Synteruptor host URL is missing"
+    exit 1
+fi
+
+# Set up environment
+dbdir="$synteruptor_dir/web/db"
+config="$synteruptor_dir/autowork/conf_file.pl"
+ip="$host/summary.php?version="
+up="$host/upload/index.php?id="
+
+# Status file
+stats=`find $work_dir -name "conf.txt"`
+
+function change_status {
+    file=$1
+    name=$2
+    new_status=$3
+    mail=$4
+
+    `$config $s status $new_status`
+    echo "Changed the status to $new_status in $name"
+
+    ########################################
+    # MAIL to the user
+    if [ -n "$client_admin" ]; then
+        mail_title="[Synteruptor] Job $name"
+        mail_text="Job is in status $new_status"
+        if [ "$new_status" == "waiting_ready" ]; then
+           mail_text="Synteruptor job '$name' started: $up$name"
+        elif [ "$new_status" == "done" ]; then
+           mail_text="Synteruptor job '$name' is now done: $ip$name"
+        fi
+        echo $mail_text | mail -aFrom:$synteruptor_mail -s $mail_title -t $client_mail
+    fi
+};
+
+for s in $stats; do
+    cur=`$config $s status`
+    client_mail=`$config $s mail`
+    datadir=`dirname $s`
+    name=`basename $datadir`
+
+    # Check starting jobs
+    if [ "$cur" == "waiting" ]; then
+        change_status $s $name "waiting_ready" $client_mail
+    fi
+
+    if [ "$cur" == "built" ]; then
+        # Finalization: copy final database
+        cp $datadir/$name.sqlite $datadir/$name.faa* $dbdir
+        if [ ! -f $dbdir/$name.sqlite ]; then
+            echo "Transfer of files to $dbdir failed"
+            change_status $s $name "failed" $client_mail
+        else
+            echo "Transfer of files to $dbdir OK"
+            change_status $s $name "done" $client_mail
+        fi
+    fi
+
+    if [ "$cur" == "failed" ]; then
+        echo "job failed"
+        change_status $s $name "failed" $client_mail
+    fi
+done
+
