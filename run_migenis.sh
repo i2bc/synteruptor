@@ -117,24 +117,21 @@ if [ ! -s $DATABASE ]; then
 	else
 		par_genome="-G $GENOMES"
 	fi
-	
 	init_db.pl -i "$ortho" -p "$paro" -g "$GENES_DATA" $par_genome -d "$DATABASE" -A "$author" -N "$descrip" 2>> "$errpath" || exit 1
-	
 	echo_log "Find blocks"
 	find_blocks.pl -d $DATABASE -t $pairs 2>> $errpath || exit 1
-	
 	echo_log "Find breaks"
 	find_breaks.pl -d $DATABASE -b $bre 2>> $errpath || exit 1
 	
 	# Finalize
+	echo_log "Create gene lists"
 	make_genes_lists.pl -d $DATABASE 2>> $errpath || exit 1
-	echo_log "After MAKE GENES LISTS"
+	echo_log "Rank the breaks"
 	ranking.pl -d $DATABASE -C 2>> $errpath || exit 1
-	echo_log "After RANKING"
+	echo_log "Order the parts"
 	order_parts.pl -d $DATABASE -a 2>> $errpath || exit 1
-	echo_log "Computing GOC"
+	echo_log "Compute GOC"
 	goc.py $DATABASE
-	echo_log "Databse $DATABASE created"
 else
 	echo_log "The database already exists"
 fi

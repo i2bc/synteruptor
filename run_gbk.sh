@@ -124,7 +124,7 @@ gbk_parser.pl -i "*.gb* *.genbank *.dat" -o $GENES_FILE -g $GENOMES_FILE -f $BLA
 echo_log "Search for breaks and create the database"
 DATABASE_FILE=$NAME".sqlite"
 rm -f $DATABASE_FILE
-time -p run_migenis.sh -i $BLAST_FILE -g $GENES_FILE -d $DATABASE_FILE -G $GENOMES_FILE $OPTP -A "$author" -N "$descrip" >&2
+run_migenis.sh -i $BLAST_FILE -g $GENES_FILE -d $DATABASE_FILE -G $GENOMES_FILE $OPTP -A "$author" -N "$descrip" >&2
 if [ $? -eq 0 ]; then
 	echo_log "Database created: $DIR/$DATABASE_FILE"
 	echo_log "Blast database also created: $DIR/$BLASTDB"
