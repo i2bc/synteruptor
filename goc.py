@@ -10,12 +10,12 @@ parser = argparse.ArgumentParser(
     description="""This script computes GOC for pairwise genomes in the database"""
 )
 parser.add_argument("database", type=str, help="path to the sqlite3 database")
+parser.add_argument("-v", dest="verbose", action="store_true", help="verbose mode")
 args = parser.parse_args()
 
 db_file = args.database
 
 # Load database
-
 if not os.path.isfile(db_file):
     sys.exit("exit")
 
@@ -26,27 +26,19 @@ cur = conn.cursor()
 cur.execute("""CREATE TABLE goc(sp1 TEXT, sp2 TEXT, pos INTEGER, score REAL)""")
 
 # Get all species in the database
-
 cur.execute("SELECT DISTINCT sp FROM genes;")
 list_species = [x[0] for x in cur.fetchall()]
 
 c = 0
 window_proportion = 3
+total_comput = (len(list_species) ** 2) - len(list_species)
 for ref in list_species:
     for tar in list_species:
         if ref == tar:
             continue
         c += 1
-        print(
-            (
-                "\r\t"
-                + str(c)
-                + "/"
-                + str((len(list_species) ** 2) - len(list_species))
-                + " GOC computation"
-            ),
-            end="",
-        )
+        if args.verbose:
+            print(f"\r\t{c}/{total_comput} GOC computation", end="")
 
         # Get all CDS for the reference
         cur.execute(
@@ -146,7 +138,9 @@ for ref in list_species:
             cur.execute(handler)
         # Save the changes
         conn.commit()
-print("\n")
+
+if args.verbose:
+    print("\n")
 
 cur.close()
 conn.close()
