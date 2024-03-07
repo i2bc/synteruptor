@@ -30,7 +30,7 @@ Synteruptor requires each genome assembly to be in a file each with both DNA seq
 
 File formats supported are:
 - Genbank (.gb*)
-- EMBL (.dat, .embl, .txt)
+- EMBL (.dat, .embl)
 
 ### Note
 

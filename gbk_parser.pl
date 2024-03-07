@@ -73,7 +73,7 @@ sub parse_gbk
 		my $gbk_file;
 		
 		# EMBL format
-		if ($gbk_path =~ /\.(dat|embl|txt)$/) {
+		if ($gbk_path =~ /\.(dat|embl)$/) {
 			eval {
 				$gbk_file = Bio::SeqIO->new(
 						-file	=> "<$gbk_path",
@@ -81,16 +81,15 @@ sub parse_gbk
 				);
 			};
 		# Genbank format
-		} elsif ($gbk_path =~ /\.(gb|gbk|genbank)$/) {
+		} elsif ($gbk_path =~ /\.(gb|gbk|gbff)$/) {
 			eval {
 				$gbk_file = Bio::SeqIO->new(
 						-file	=> "<$gbk_path",
 						-format	=> 'genbank',
 				);
 			};
-		}
-		if ($@) {
-			die("Error: unsupported format: $@");
+		} else {
+			die("Error: unsupported format for $gbk_path");
 		}
 		
 		# Deduce genome species abbreviation from the gbk filename (easier to customize without modifying the gbk file)

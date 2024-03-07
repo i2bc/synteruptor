@@ -83,7 +83,7 @@ rm ./$NAME* -f
 rm ./*.fa* -f
 
 # Check usable files
-n_files=$(ls *.gb* *.genbank *.dat *.embl 2> /dev/null | wc -l)
+n_files=$(ls *.gb* *.dat *.embl 2> /dev/null | wc -l)
 
 if [ $n_files -lt 2 ]
 then
@@ -98,7 +98,7 @@ rename 's/[^A-Za-z0-9_\-.]+//g' *.*
 # Prepare genes file
 echo_log "Begin Migenis database creation for $NAME with $n_files files"
 shopt -s extglob
-list=`ls +(*.gb*|*.genbank|*.dat|*.embl)`
+list=`ls +(*.gb*|*.dat|*.embl)`
 
 # Blast
 echo_log "Extract fasta files"
@@ -118,7 +118,7 @@ OPTP=""
 if [ -n "$BLOCKS_TOLERANCE" ]; then
 	OPTP="-p $BLOCKS_TOLERANCE"
 fi
-gbk_parser.pl -i "*.gb* *.genbank *.dat" -o $GENES_FILE -g $GENOMES_FILE -f $BLASTDB
+gbk_parser.pl -i "*.gb* *.dat *.embl" -o $GENES_FILE -g $GENOMES_FILE -f $BLASTDB
 
 # Run the breaks search
 echo_log "Search for breaks and create the database"
