@@ -545,8 +545,6 @@ sub solve_synteny {
 		my $fafter  = $protorder->{$sp1}->{$fnum+1};
 		my $fbefore_ortho = ($fbefore and $orthos_from->{$fbefore}) ? $orthos_from->{$fbefore} : '';
 		my $fafter_ortho  = ($fafter  and $orthos_from->{$fafter})  ? $orthos_from->{$fafter}  : '';
-		print STDERR "SYNTENY_TEST\t$f\t$fbefore, $fafter\n" if $opt{v};
-		print STDERR "SYNTENY_TEST\t?????\t$fbefore_ortho, $fafter_ortho\n" if $opt{v};
 		
 		if ($fbefore_ortho or $fafter_ortho) {
 			foreach my $t (@$tos) {
@@ -554,30 +552,7 @@ sub solve_synteny {
 				my $tbefore = $protorder->{$sp2}->{$tnum-1};
 				$tbefore = '' if not $tbefore;
 				my $tafter  = $protorder->{$sp2}->{$tnum+1};
-				print STDERR "SYNTENY_TEST\t$t\t$tbefore, $tafter\t" if $opt{v};
-				
-				# This is a pair if from and to have at least one orthologous neighbor in common
-				if ($fbefore_ortho eq $tbefore and $fafter_ortho eq $tafter) {
-					print STDERR "direct double MATCH\n" if $opt{v};
-				}
-				elsif ($fbefore_ortho eq $tafter and $fafter_ortho eq $tbefore) {
-					print STDERR "reversed double MATCH\n" if $opt{v};
-				}
-				elsif ($fbefore_ortho eq $tbefore) {
-					print STDERR "direct left MATCH\n" if $opt{v};
-				}
-				elsif ($fbefore_ortho eq $tafter) {
-					print STDERR "reversed left MATCH\n" if $opt{v};
-				}
-				elsif ($fafter_ortho eq $tafter) {
-					print STDERR "direct right MATCH\n" if $opt{v};
-				}
-				elsif ($fafter_ortho eq $tbefore) {
-					print STDERR "reversed right MATCH\n" if $opt{v};
-				}
-				else {
-					print STDERR "no\n" if $opt{v};
-				}
+				$tafter = '' if not $tafter;
 				
 				if
 				   ($tbefore eq $fbefore_ortho
