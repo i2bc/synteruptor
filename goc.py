@@ -23,7 +23,7 @@ conn = sqlite3.connect(db_file)
 
 cur = conn.cursor()
 
-cur.execute("""DROP TABLE goc""")
+cur.execute("""DROP TABLE IF EXISTS goc""")
 cur.execute("""CREATE TABLE goc(sp1 TEXT, sp2 TEXT, pos INTEGER, score REAL)""")
 
 # Get all species in the database
