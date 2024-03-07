@@ -66,4 +66,4 @@ files=`ls $DATA_FILES`
 (parallel -j $JOBS makeblastdb -dbtype prot -in {} ::: $files) 1> /dev/null 2> /dev/null
 
 # Run in parallel, like 2 nested loops all files vs all files
-parallel -j $JOBS blaster_function.sh {1} {2} ::: $files ::: $files || exit 1
+parallel -j 1 blaster_function.sh {1} {2} $JOBS ::: $files ::: $files || exit 1

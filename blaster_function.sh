@@ -6,9 +6,9 @@
 
 db=$1
 query=$2
+threads=$3
 
 blastp="blastp"		# Blast+
-threads=1
 
 # Prepare file name
 dbname="${db%.*}"
