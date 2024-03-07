@@ -72,6 +72,10 @@ if [ -z "$JOBS" ] ; then JOBS=1; fi
 if [ -z "$BLOCKS_TOLERANCE" ] ; then BLOCKS_TOLERANCE=2; fi
 if [ -z "$DIR" ] ; then usage "Gbk directory needed (-i)"; fi
 
+function echo_log {
+	echo "[$(date +'%F %T')] $1" 1>&2
+}
+
 cd $DIR
 
 # Delete any previous files with the same name
@@ -83,7 +87,7 @@ n_files=$(ls *.gb* *.genbank *.dat *.embl 2> /dev/null | wc -l)
 
 if [ $n_files -lt 2 ]
 then
-	echo "Not enough files to build a Synteruptor database ($n_files). Verify the extension used"
+	echo_log "Not enough files to build a Synteruptor database ($n_files). Verify the extension used"
 	exit 1
 fi
 
@@ -92,21 +96,21 @@ rename 's/ /_/g' *.*
 rename 's/[^A-Za-z0-9_\-.]+//g' *.*
 
 # Prepare genes file
-echo "[$(date +'%F %T')] Begin Migenis database creation for $NAME with $n_files files"
+echo_log "Begin Migenis database creation for $NAME with $n_files files"
 shopt -s extglob
-list=`ls +(*.gb*|*.genbank|*.dat)`
+list=`ls +(*.gb*|*.genbank|*.dat|*.embl)`
 
 # Blast
-echo "[$(date +'%F %T')] Extract fasta files" >&2
+echo_log "Extract fasta files"
 parallel --jobs $JOBS gbk_parser.pl -i {} -f {.}.faa ::: $list
 
-echo "[$(date +'%F %T')] Blast all vs all" >&2
+echo_log "Blast all vs all"
 BLAST_FILE=$NAME"_blast.txt"
 rm -f $BLAST_FILE
-time -p blaster_local.sh -n $JOBS >&2 || exit 1
+blaster_local.sh -n $JOBS >&2 || exit 1
 cat *.blast > $BLAST_FILE
 
-echo "[$(date +'%F %T')] Prepare genes data" >&2
+echo_log "Prepare genes data"
 GENES_FILE=$NAME"_genes.txt"
 GENOMES_FILE=$NAME"_genomes.txt"
 BLASTDB=$NAME".faa"
@@ -117,16 +121,14 @@ fi
 gbk_parser.pl -i "*.gb* *.genbank *.dat" -o $GENES_FILE -g $GENOMES_FILE -f $BLASTDB
 
 # Run the breaks search
-echo "[$(date +'%F %T')] Search the breaks and create the database" >&2
+echo_log "Search for breaks and create the database"
 DATABASE_FILE=$NAME".sqlite"
 rm -f $DATABASE_FILE
-echo "[$(date +'%F %T')] time -p run_migenis.sh -i $BLAST_FILE -g $GENES_FILE -d $DATABASE_FILE -G $GENOMES_FILE $OPTP -A '$author' -N '$descrip' >&2";
 time -p run_migenis.sh -i $BLAST_FILE -g $GENES_FILE -d $DATABASE_FILE -G $GENOMES_FILE $OPTP -A "$author" -N "$descrip" >&2
 if [ $? -eq 0 ]; then
-	echo "[$(date +'%F %T')] Database created: $DIR/$DATABASE_FILE" >&2
-	echo "[$(date +'%F %T')] Blast database also created: $DIR/$BLASTDB" >&2
+	echo_log "Database created: $DIR/$DATABASE_FILE"
+	echo_log "Blast database also created: $DIR/$BLASTDB"
 else
-	echo "[$(date +'%F %T')] Error: run_migenis.sh failed at some point"
+	echo_log "Error: run_migenis.sh failed at some point"
 	exit $!
 fi
-

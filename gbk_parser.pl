@@ -66,12 +66,13 @@ sub parse_gbk
 	my @gparts = ();
 	my @sequences = ();
 	
-	foreach my $gbk_path (glob(`ls $gbk_paths`)) {
-		print STDERR "Parsing $gbk_path...\n";
+	foreach my $gbk_path (glob(`ls $gbk_paths 2> /dev/null`)) {
+		#print STDERR "Parsing $gbk_path...\n";
 		
 		# Open the stream
 		my $gbk_file;
 		
+		# EMBL format
 		if ($gbk_path =~ /\.(dat|embl|txt)$/) {
 			eval {
 				$gbk_file = Bio::SeqIO->new(
@@ -79,8 +80,8 @@ sub parse_gbk
 						-format	=> 'embl',
 				);
 			};
-		# Default to gbk
-		} else {
+		# Genbank format
+		} elsif ($gbk_path =~ /\.(gb|gbk|genbank)$/) {
 			eval {
 				$gbk_file = Bio::SeqIO->new(
 						-file	=> "<$gbk_path",

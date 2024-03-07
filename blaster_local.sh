@@ -28,7 +28,7 @@ usage() {
 	Files:
 	-i <path> : directory path where the fasta files are
 	-f <path> : file descriptor for the fasta files (default: *.fa*)
-	-n <int>  : max number of threads
+	-n <int>  : max number of threads (default: 1)
 _EOF_
 	echo "$help"
 	exit
@@ -54,6 +54,7 @@ do
 			;;
 	esac
 done
+if [ -z "$JOBS" ] ; then JOBS=1; fi
 
 ####################################################
 cd $DATA_PATH;

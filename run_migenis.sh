@@ -99,14 +99,17 @@ if [ -z "$bre" ] ; then bre=6; fi
 ortho="orthos_"$GENES_DATA
 paro="paras_"$GENES_DATA
 errpath=$DATABASE".err"
-echo -n "$DATABASE " 1>&2
+
+function echo_log {
+	echo "[$(date +'%F %T')] $1" 1>&2
+}
 
 if [ ! -s $DATABASE ]; then
-	echo "compute" 1>&2
-	# First make clusters
-	ortholog_pairs.pl -i $BLAST -g $GENES_DATA -o $ortho 2>> $errpath || exit 1
-	# Find paralogs
-	paralog_pairs.pl -i $BLAST -g $GENES_DATA -o $paro -s $para_id 2>> $errpath || exit 1
+	echo_log "Compute $DATABASE"
+	echo_log "Make ortholog pairs"
+	ortholog_pairs.pl -i $BLAST -g $GENES_DATA -o $ortho || exit 1
+	echo_log "Find paralogs"
+	paralog_pairs.pl -i $BLAST -g $GENES_DATA -o $paro -s $para_id || exit 1
 	
 	# Then create the database
 	if [ -z "$GENOMES" ]; then
@@ -115,28 +118,23 @@ if [ ! -s $DATABASE ]; then
 		par_genome="-G $GENOMES"
 	fi
 	
-	echo "[$(date +'%F %T')]" 'init_db.pl' -i "$ortho" -p "$paro" -g "$GENES_DATA" $par_genome -d "$DATABASE" -A "$author" -N "$descrip" '2>>' "$errpath"' || exit 1';
 	init_db.pl -i "$ortho" -p "$paro" -g "$GENES_DATA" $par_genome -d "$DATABASE" -A "$author" -N "$descrip" 2>> "$errpath" || exit 1
 	
-	# Find blocks
+	echo_log "Find blocks"
 	find_blocks.pl -d $DATABASE -t $pairs 2>> $errpath || exit 1
 	
-	# Find breaks
-	echo "[$(date +'%F %T')]" "find_breaks.pl '-d $DATABASE -b $bre 2>> $errpath || exit 1";
+	echo_log "Find breaks"
 	find_breaks.pl -d $DATABASE -b $bre 2>> $errpath || exit 1
-	echo 'SELECT * FROM breaks_all WHERE sp1="Sco" AND sp2="Dsm" AND left1="SCO6972";' | sqlite3 $DATABASE
 	
 	# Finalize
 	make_genes_lists.pl -d $DATABASE 2>> $errpath || exit 1
-	echo "[$(date +'%F %T')]" "After MAKE GENES LISTS"
-	echo 'SELECT * FROM breaks_all WHERE sp1="Sco" AND sp2="Dsm" AND left1="SCO6972";' | sqlite3 $DATABASE
+	echo_log "After MAKE GENES LISTS"
 	ranking.pl -d $DATABASE -C 2>> $errpath || exit 1
-	echo "[$(date +'%F %T')]" "After RANKING"
-	echo 'SELECT * FROM breaks_all WHERE sp1="Sco" AND sp2="Dsm" AND left1="SCO6972";' | sqlite3 $DATABASE
+	echo_log "After RANKING"
 	order_parts.pl -d $DATABASE -a 2>> $errpath || exit 1
-	echo "[$(date +'%F %T')]" "Computing GOC"
+	echo_log "Computing GOC"
 	goc.py $DATABASE
-	echo "[$(date +'%F %T')]" "END"
+	echo_log "Databse $DATABASE created"
 else
-	echo "[$(date +'%F %T')]" "The database already exists" 1>&2
+	echo_log "The database already exists"
 fi
