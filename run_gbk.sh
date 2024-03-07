@@ -104,6 +104,22 @@ list=`ls +(*.gb*|*.dat|*.embl)`
 echo_log "Extract fasta files"
 parallel --jobs $JOBS gbk_parser.pl -i {} -f {.}.faa ::: $list
 
+# Check that all files have sequences
+empty_fasta="0"
+for fasta in $(ls *.faa); do
+	nseqs=$(grep '>' $fasta | wc -l)
+	if [ "$nseqs" == "0" ]
+	then
+		echo "Fasta file $fasta has no sequences."
+		empty_fasta=1
+	fi
+done
+if [ "$empty_fasta" == "1" ]
+then
+	echo "Some fasta files had no sequences. Check the input files."
+	exit 1
+fi
+
 echo_log "Blast all vs all"
 BLAST_FILE=$NAME"_blast.txt"
 rm -f $BLAST_FILE
