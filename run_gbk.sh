@@ -78,8 +78,21 @@ cd $DIR
 rm ./$NAME* -f
 rm ./*.fa* -f
 
+# Check usable files
+n_files=$(ls *.gb* *.genbank *.dat *.embl 2> /dev/null | wc -l)
+
+if [ $n_files -lt 2 ]
+then
+	echo "Not enough files to build a Synteruptor database ($n_files). Verify the extension used"
+	exit 1
+fi
+
+# Remove special characters from file names
+rename 's/ /_/g' *.*
+rename 's/[^A-Za-z0-9_\-.]+//g' *.*
+
 # Prepare genes file
-echo "[$(date +'%F %T')] Begin Migenis database creation for $NAME"
+echo "[$(date +'%F %T')] Begin Migenis database creation for $NAME with $n_files files"
 shopt -s extglob
 list=`ls +(*.gb*|*.genbank|*.dat)`
 
