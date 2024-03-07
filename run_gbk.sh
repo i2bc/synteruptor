@@ -31,7 +31,7 @@ function usage {
 	-p <num>  : blocks tolerance (default: 2)
 	-N <str>  : database description
 	-A <str>  : database authors
-	-j <num>  : number of threads
+	-j <num>  : number of threads (default: 1)
 _EOF_
 	echo "$help"
 	exit
@@ -68,6 +68,7 @@ do
 done
 if [ -z "$author" ] ; then author=""; fi
 if [ -z "$descrip" ] ; then descrip=""; fi
+if [ -z "$JOBS" ] ; then JOBS=1; fi
 if [ -z "$BLOCKS_TOLERANCE" ] ; then BLOCKS_TOLERANCE=2; fi
 if [ -z "$DIR" ] ; then usage "Gbk directory needed (-i)"; fi
 
