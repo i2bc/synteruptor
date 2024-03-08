@@ -26,8 +26,7 @@ my $methods_list = '"' . join('", "', @methods_order) . '"';
 
 #################################################
 # Message about this program and how to use it
-sub usage
-{
+sub usage {
 	print STDERR "[ $_[0] ]\n" if $_[0];
 	print STDERR << "EOF";
 	
@@ -56,8 +55,7 @@ EOF
 
 ##################################
 # Command line options processing
-sub init
-{
+sub init {
 	getopts('hi:g:o:p:m:v', \%opt) or usage();
 	usage() if $opt{h};
 	usage("Blasthits file needed (-i)") unless $opt{i};
@@ -68,13 +66,12 @@ sub init
 		die("Method '$opt{m}' is not defined");
 	} elsif (not defined($opt{m})) {
 		$opt{m} = $methods_order[0];
-		print STDERR ("Default method: $opt{m}\n");
+		print STDERR ("Default method: $opt{m}\n") if $opt{v};
 	}
 }
 
 # Read the genes data file
-sub get_genes_data
-{
+sub get_genes_data {
 	my ($path, $protdata) = @_;
 	my %protdata = ();
 	my %protorder = ();
@@ -107,8 +104,7 @@ sub get_genes_data
 # HITS IMPORT FUNCTIONS
 
 # Keep the blast hit if it is the best
-sub add_match
-{
+sub add_match {
 	my ($matches, $hit, $protdata) = @_;
 	
 	my $from = $hit->{'query'};
@@ -161,8 +157,7 @@ sub add_match
 
 # Create a hit "object" with its first match
 # Return this object
-sub init_match
-{
+sub init_match {
 	my ($bhit, $to) = @_;
 	
 	my $match = {
@@ -176,8 +171,7 @@ sub init_match
 }
 
 # Filter the hits before further analysis
-sub filter_hit
-{
+sub filter_hit {
 	my ($hit, $protdata, $pars) = @_;
 	
 	my $query = $hit->{'query'};
@@ -212,8 +206,7 @@ sub filter_hit
 
 # Create ortholog pairs based on BRH
 # print directly the result to the file, returns nothing
-sub method_brh
-{
+sub method_brh {
 	my ($inpath, $outpath, $protdata, $protorder, $pars) = @_;
 	
 	my %matches = ();
@@ -248,7 +241,7 @@ sub method_brh
 		}
 	}
 	close(BH);
-	warn("$nhits / $nhits_all filtered hits\n");
+	warn("$nhits / $nhits_all filtered hits\n") if $opt{v};
 	
 	# From the matches, compute all the best pairs
 	my @pairs = make_all_brh_pairs(\%matches, $protdata, $protorder, $pars);
@@ -258,9 +251,7 @@ sub method_brh
 ###############################################################################################
 # BRH FUNCTIONS
 
-
-sub add_to_group
-{
+sub add_to_group {
 	my ($best, $recip, $grp_counter, $from_grp, $to_grp) = @_;
 	
 	# Add them to a group (create the group if no group found)
@@ -299,8 +290,7 @@ sub add_to_group
 	return($grp_counter, $from_grp, $to_grp);
 }
 
-sub make_all_brh_pairs
-{
+sub make_all_brh_pairs {
 	my ($matches, $protdata, $protorder, $pars) = @_;
 	
 	my @pairs = ();
@@ -311,13 +301,12 @@ sub make_all_brh_pairs
 	}
 	
 	my $npairs = @pairs;
-	warn("SUMMARY\tFound pairs:\t$npairs\n");
+	warn("SUMMARY\tFound pairs:\t$npairs\n") if $opt{v};
 	
 	return @pairs;
 }
 
-sub make_pairs
-{
+sub make_pairs {
 	my ($matches, $protdata, $protorder, $sp1, $sp2, $pars) = @_;
 	
 	my %multis = ();
@@ -340,13 +329,12 @@ sub make_pairs
 			sprintf("group_to: %-5s", $nto),
 			sprintf("matches: %-5s", $nsolved),
 		);
-		print STDERR join("\t", @vals) . "\n";
+		print STDERR join("\t", @vals) . "\n" if $opt{v};
 	}
 	return @solved_pairs;
 }
 
-sub make_groups
-{
+sub make_groups {
 	my ($matches, $sp1, $sp2) = @_;	
 	my $hits = $matches->{$sp1}->{$sp2};
 	my $rhits = $matches->{$sp2}->{$sp1};
@@ -453,8 +441,7 @@ sub make_groups
 	return $from_grp, $to_grp, $grp_counter, \%orthos_from, \%orthos_to, \@solved_pairs;
 }
 
-sub solve_multiples
-{
+sub solve_multiples {
 	my ($from_grp, $to_grp, $grp_counter, $protdata, $protorder, $orthos_from, $orthos_to, $sp1, $sp2) = @_;
 	
 	my @solved_pairs = ();
@@ -547,8 +534,7 @@ sub solve_multiples
 	return @solved_pairs;
 }
 
-sub solve_synteny
-{
+sub solve_synteny {
 	my ($froms, $tos, $protdata, $protorder, $orthos_from, $orthos_to, $sp1, $sp2) = @_;
 	
 	my @potential_pairs = ();
@@ -559,8 +545,6 @@ sub solve_synteny
 		my $fafter  = $protorder->{$sp1}->{$fnum+1};
 		my $fbefore_ortho = ($fbefore and $orthos_from->{$fbefore}) ? $orthos_from->{$fbefore} : '';
 		my $fafter_ortho  = ($fafter  and $orthos_from->{$fafter})  ? $orthos_from->{$fafter}  : '';
-		print STDERR "SYNTENY_TEST\t$f\t$fbefore, $fafter\n" if $opt{v};
-		print STDERR "SYNTENY_TEST\t?????\t$fbefore_ortho, $fafter_ortho\n" if $opt{v};
 		
 		if ($fbefore_ortho or $fafter_ortho) {
 			foreach my $t (@$tos) {
@@ -568,30 +552,7 @@ sub solve_synteny
 				my $tbefore = $protorder->{$sp2}->{$tnum-1};
 				$tbefore = '' if not $tbefore;
 				my $tafter  = $protorder->{$sp2}->{$tnum+1};
-				print STDERR "SYNTENY_TEST\t$t\t$tbefore, $tafter\t" if $opt{v};
-				
-				# This is a pair if from and to have at least one orthologous neighbor in common
-				if ($fbefore_ortho eq $tbefore and $fafter_ortho eq $tafter) {
-					print STDERR "direct double MATCH\n" if $opt{v};
-				}
-				elsif ($fbefore_ortho eq $tafter and $fafter_ortho eq $tbefore) {
-					print STDERR "reversed double MATCH\n" if $opt{v};
-				}
-				elsif ($fbefore_ortho eq $tbefore) {
-					print STDERR "direct left MATCH\n" if $opt{v};
-				}
-				elsif ($fbefore_ortho eq $tafter) {
-					print STDERR "reversed left MATCH\n" if $opt{v};
-				}
-				elsif ($fafter_ortho eq $tafter) {
-					print STDERR "direct right MATCH\n" if $opt{v};
-				}
-				elsif ($fafter_ortho eq $tbefore) {
-					print STDERR "reversed right MATCH\n" if $opt{v};
-				}
-				else {
-					print STDERR "no\n" if $opt{v};
-				}
+				$tafter = '' if not $tafter;
 				
 				if
 				   ($tbefore eq $fbefore_ortho
@@ -661,8 +622,7 @@ sub solve_synteny
 	return @synt_solved;
 }
 
-sub print_pairs
-{
+sub print_pairs {
 	my ($outpath, $pairs) = @_;
 
 	my @ortho_headers = qw(oid	pid1	pid2	o_ident	o_alen);
@@ -681,8 +641,7 @@ sub print_pairs
 	close(OUT);
 }
 
-sub change_method_parameters
-{
+sub change_method_parameters {
 	my ($pars, $changes) = @_;
 	
 	# Copy default values
@@ -701,10 +660,10 @@ sub change_method_parameters
 	return \%new_pars;
 }
 
-sub print_parameters
-{
+sub print_parameters {
 	my ($name, $pars) = @_;
 	return if not defined($name) or not defined($methods{$name});
+	return if not $opt{v};
 	print STDERR "Method: $name\n";
 	foreach my $k (sort keys %$pars) {
 		print STDERR "\t$k\t$pars->{$k}\n";

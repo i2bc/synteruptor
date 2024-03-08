@@ -6,20 +6,23 @@
 
 db=$1
 query=$2
+threads=$3
 
 blastp="blastp"		# Blast+
-threads=1
 
 # Prepare file name
 dbname="${db%.*}"
 queryname="${query%.*}"
 blastout="$dbname"-"$queryname".blast
 
+function echo_log {
+	echo "[$(date +'%F %T')] $1" 1>&2
+}
+
 # Do blast if file doesn't exist
 if [ -s $blastout ] ; then
-	echo "[$(date +'%F %T')]" "File $blastout already exists: no blast done. If you want to redo the comparison, just delete the file and restart the script."
+	echo_log "Reusing $blastout"
 else
-	echo "[$(date +'%F %T')]" "Blastp $db vs $query"
 	$blastp -db $db -query $query -evalue 1E-5 -outfmt 6 -out $blastout -num_threads $threads
+	echo_log "Blastp done for $db vs $query"
 fi
-

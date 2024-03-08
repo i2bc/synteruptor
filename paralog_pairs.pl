@@ -14,8 +14,7 @@ my $default_id = 40;
 
 #################################################
 # Message about this program and how to use it
-sub usage
-{
+sub usage {
 	print STDERR "[ $_[0] ]\n" if $_[0];
 	print STDERR << "EOF";
 	
@@ -38,8 +37,7 @@ EOF
 
 ##################################
 # Command line options processing
-sub init
-{
+sub init {
 	getopts('hi:g:o:s:v', \%opt) or usage();
 	usage() if $opt{h};
 	usage("Blasthits file needed (-i)") unless $opt{i};
@@ -48,8 +46,7 @@ sub init
 	$default_id = $opt{s} if defined( $opt{s} );
 }
 
-sub get_genes_data
-{
+sub get_genes_data {
 	my ($path, $protdata) = @_;
 	my %protdata = ();
 	my %protorder = ();
@@ -78,8 +75,7 @@ sub get_genes_data
 	return \%protdata;
 }
 
-sub para_search
-{
+sub para_search {
 	my ($inpath, $protdata) = @_;
 	
 	my %hits = ();
@@ -142,7 +138,7 @@ sub para_search
 	}
 	close(BH);
 	
-	warn("$nhits / $nhits_all filtered hits\n");
+	warn("$nhits / $nhits_all filtered hits\n") if $opt{v};
 	
 	if ($condemned) {
 		die("Some sequences have no data in the proteins table: can't continue. ($condemned errors)");

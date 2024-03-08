@@ -10,12 +10,12 @@ parser = argparse.ArgumentParser(
     description="""This script computes GOC for pairwise genomes in the database"""
 )
 parser.add_argument("database", type=str, help="path to the sqlite3 database")
+parser.add_argument("-v", dest="verbose", action="store_true", help="verbose mode")
 args = parser.parse_args()
 
 db_file = args.database
 
 # Load database
-
 if not os.path.isfile(db_file):
     sys.exit("exit")
 
@@ -23,65 +23,65 @@ conn = sqlite3.connect(db_file)
 
 cur = conn.cursor()
 
+cur.execute("""DROP TABLE IF EXISTS goc""")
 cur.execute("""CREATE TABLE goc(sp1 TEXT, sp2 TEXT, pos INTEGER, score REAL)""")
 
 # Get all species in the database
-
 cur.execute("SELECT DISTINCT sp FROM genes;")
 list_species = [x[0] for x in cur.fetchall()]
 
 c = 0
 window_proportion = 3
+total_comput = (len(list_species) ** 2) - len(list_species)
 for ref in list_species:
     for tar in list_species:
         if ref == tar:
             continue
         c += 1
-        print(
-            (
-                "\r\t"
-                + str(c)
-                + "/"
-                + str((len(list_species) ** 2) - len(list_species))
-                + " GOC computation"
-            ),
-            end="",
-        )
+        if args.verbose:
+            print(f"\r\t{c}/{total_comput} GOC computation", end="")
 
         # Get all CDS for the reference
         cur.execute(
-            "SELECT g.pid FROM genes g JOIN genome_parts gp ON g.gpart = gp.gpart WHERE feat = 'CDS' and g.sp = ? ORDER BY gp.min, loc_start ASC;",
+            """
+            SELECT g.pid FROM genes g JOIN genome_parts gp ON g.gpart = gp.gpart
+            WHERE feat = 'CDS' and g.sp = ?
+            ORDER BY gp.min, loc_start ASC;
+            """,
             (ref,),
         )
         list_cds_ref = [x[0] for x in cur.fetchall()]
 
         # Get all genes for the reference
         cur.execute(
-            "SELECT g.pid FROM genes g JOIN genome_parts gp ON g.gpart = gp.gpart WHERE g.sp = ? ORDER BY gp.min, loc_start ASC;",
+            """
+            SELECT g.pid FROM genes g JOIN genome_parts gp ON g.gpart = gp.gpart
+            WHERE g.sp = ?
+            ORDER BY gp.min, loc_start ASC;
+            """,
             (ref,),
         )
         list_gene_ref = [x[0] for x in cur.fetchall()]
 
         # Get all CDS for the target
         cur.execute(
-            "SELECT g.pid FROM genes g JOIN genome_parts gp ON g.gpart = gp.gpart WHERE feat = 'CDS' and g.sp = ? ORDER BY gp.min, loc_start ASC;",
+            """
+            SELECT g.pid FROM genes g JOIN genome_parts gp ON g.gpart = gp.gpart
+            WHERE feat = 'CDS' and g.sp = ?
+            ORDER BY gp.min, loc_start ASC
+            """,
             (tar,),
         )
         list_cds_tar = [x[0] for x in cur.fetchall()]
 
-        # SQL request preparation
-        sql_prep_cds_list = "'"
-        sql_prep_cds_list = sql_prep_cds_list + ("', '").join(list_cds_ref) + "'"
-        sql_handler = (
-            "SELECT g1.pid gene_id1, g2.pid gene_id2 FROM orthos o JOIN genes g1 ON o.pid1 = g1.pid JOIN genes g2 ON o.pid2 = g2.pid WHERE o.pid1 IN ("
-            + sql_prep_cds_list
-            + ") AND g2.sp = '"
-            + tar
-            + "';"
-        )
+        # Get all ortholog pairs
+        sql_prep_cds_list = "'" + ("', '").join(list_cds_ref) + "'"
+        sql_handler = f"""
+            SELECT g1.pid gene_id1, g2.pid gene_id2
+            FROM orthos o JOIN genes g1 ON o.pid1 = g1.pid JOIN genes g2 ON o.pid2 = g2.pid
+            WHERE o.pid1 IN ({sql_prep_cds_list}) AND g2.sp = '{tar}'
+            """
         cur.execute(sql_handler)
-
-        # Data preparation
         ort = {}
         raw_sql_ort = cur.fetchall()
         for i in raw_sql_ort:
@@ -132,21 +132,13 @@ for ref in list_species:
             loc_start_window += 1
 
             # Insert a row of data
-            handler = (
-                "INSERT INTO goc VALUES ('"
-                + ref
-                + "','"
-                + tar
-                + "','"
-                + str(goc_loc)
-                + "','"
-                + str(goc_cds)
-                + "')"
-            )
+            handler = f"INSERT INTO goc VALUES ('{ref}','{tar}', '{goc_loc}','{goc_cds}')"
             cur.execute(handler)
         # Save the changes
         conn.commit()
-print("\n")
+
+if args.verbose:
+    print("\n")
 
 cur.close()
 conn.close()

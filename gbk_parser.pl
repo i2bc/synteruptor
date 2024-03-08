@@ -66,30 +66,30 @@ sub parse_gbk
 	my @gparts = ();
 	my @sequences = ();
 	
-	foreach my $gbk_path (glob(`ls $gbk_paths`)) {
-		print STDERR "Parsing $gbk_path...\n";
+	foreach my $gbk_path (glob(`ls $gbk_paths 2> /dev/null`)) {
+		#print STDERR "Parsing $gbk_path...\n";
 		
 		# Open the stream
 		my $gbk_file;
 		
-		if ($gbk_path =~ /\.(dat|embl|txt)$/) {
+		# EMBL format
+		if ($gbk_path =~ /\.(dat|embl)$/) {
 			eval {
 				$gbk_file = Bio::SeqIO->new(
 						-file	=> "<$gbk_path",
 						-format	=> 'embl',
 				);
 			};
-		# Default to gbk
-		} else {
+		# Genbank format
+		} elsif ($gbk_path =~ /\.(gb|gbk|gbff)$/) {
 			eval {
 				$gbk_file = Bio::SeqIO->new(
 						-file	=> "<$gbk_path",
 						-format	=> 'genbank',
 				);
 			};
-		}
-		if ($@) {
-			die("Error: unsupported format: $@");
+		} else {
+			die("Error: unsupported format for $gbk_path");
 		}
 		
 		# Deduce genome species abbreviation from the gbk filename (easier to customize without modifying the gbk file)
@@ -155,6 +155,24 @@ sub parse_gbk
 				my $locus = '';
 				if ($feat->has_tag('locus_tag')) {
 					($locus) = $feat->get_tag_values('locus_tag');
+
+					# Ensure locus tags are unique
+					my $locus_stem = $locus . "_";
+					my $locus_num = 1;
+					while ($gene{$rname}{$locus}) {
+						my $prev_feat = $gene{$rname}{$locus}->{feat};
+						my $new_feat = $feat->primary_tag;
+
+						# Keep only 1 mRNA (the last one) or replace the mRNA by a CDS if any
+						if ($prev_feat eq "mRNA" and ($new_feat eq "CDS" or $new_feat eq "mRNA")) {
+							last;
+						}
+
+						$locus = $locus_stem . $locus_num++;
+						if ($locus_num > 100) {
+							die("Too many loci named $locus");
+						}
+					}
 					
 				} else {
 					# No locus_tag? Create one from the gpart name (and a prefix if provided)
@@ -215,7 +233,6 @@ sub parse_gbk
 							$sequence =~ s/\*//;
 						}
 					}
-					
 					
 					if ($sequence ne '') {
 						my $seqobj = Bio::Seq->new( -display_id => $locus, -seq =>  $sequence );

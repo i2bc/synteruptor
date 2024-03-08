@@ -49,14 +49,14 @@ sub gbk_to_fastan
 	# Open the stream
 	my $gbk_file;
 	
-	if ($gbk_path =~ /\.dat$|\.embl$/) {
+	if ($gbk_path =~ /\.(dat|txt|embl)$/) {
 		eval {
 			$gbk_file = Bio::SeqIO->new(
 					-file	=> "<$gbk_path",
 					-format	=> 'embl',
 			);
 		};
-	} elsif ($gbk_path =~ /\.gb.*$|\.genbank$/) {
+	} elsif ($gbk_path =~ /\.(gb.*|genbank)$/) {
 		eval {
 			$gbk_file = Bio::SeqIO->new(
 					-file	=> "<$gbk_path",
