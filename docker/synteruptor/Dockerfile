@@ -11,9 +11,8 @@ RUN apt install -y git parallel
 RUN apt install -y bioperl libstatistics-basic-perl ncbi-blast+ sqlite3
 
 # Install synteruptor
-RUN git clone https://github.com/i2bc/synteruptor.git && cd synteruptor && git checkout v1.0.1
+RUN git clone https://github.com/i2bc/synteruptor.git && cd synteruptor && git checkout main
 RUN chmod +x synteruptor/*.sh /synteruptor/*.pl
 ENV PATH="$PATH:/synteruptor"
 
 ENTRYPOINT ["run_gbk.sh"]
-
