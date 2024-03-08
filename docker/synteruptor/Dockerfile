@@ -7,7 +7,7 @@ LABEL description="Set of scripts to build a Synteruptor database."
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt update
-RUN apt install -y git parallel
+RUN apt install -y git parallel rename
 RUN apt install -y bioperl libstatistics-basic-perl ncbi-blast+ sqlite3
 
 # Install synteruptor
