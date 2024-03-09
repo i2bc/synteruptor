@@ -73,7 +73,7 @@ sub parse_gbk
 		my $gbk_file;
 		
 		# EMBL format
-		if ($gbk_path =~ /\.(dat|embl)$/) {
+		if ($gbk_path =~ /\.(dat|embl|txt)$/) {
 			eval {
 				$gbk_file = Bio::SeqIO->new(
 						-file	=> "<$gbk_path",
