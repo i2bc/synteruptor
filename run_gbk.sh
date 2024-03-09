@@ -71,16 +71,19 @@ if [ -z "$descrip" ] ; then descrip=""; fi
 if [ -z "$JOBS" ] ; then JOBS=1; fi
 if [ -z "$BLOCKS_TOLERANCE" ] ; then BLOCKS_TOLERANCE=2; fi
 if [ -z "$DIR" ] ; then usage "Gbk directory needed (-i)"; fi
+DIR=$(realpath $DIR)
 
 function echo_log {
 	echo "[$(date +'%F %T')] $1" 1>&2
 }
 
-cd $DIR
+WORK_DIR=$DIR/temp
+mkdir -p $WORK_DIR
 
 # Delete any previous files with the same name
-rm ./$NAME* -f
-rm ./*.fa* -f
+cd $WORK_DIR
+rm ./*.tmp ./*.faa* -f
+cp $DIR/*.* $WORK_DIR/
 
 # Check usable files
 n_files=$(ls *.gb* *.dat *.txt *.embl 2> /dev/null | wc -l)
@@ -121,14 +124,14 @@ then
 fi
 
 echo_log "Blast all vs all"
-BLAST_FILE=$NAME"_blast.txt"
+BLAST_FILE=$NAME"_blast.txt.tmp"
 rm -f $BLAST_FILE
 blaster_local.sh -n $JOBS >&2 || exit 1
 cat *.blast > $BLAST_FILE
 
 echo_log "Prepare genes data"
-GENES_FILE=$NAME"_genes.txt"
-GENOMES_FILE=$NAME"_genomes.txt"
+GENES_FILE=$NAME"_genes.txt.tmp"
+GENOMES_FILE=$NAME"_genomes.txt.tmp"
 BLASTDB=$NAME".faa"
 OPTP=""
 if [ -n "$BLOCKS_TOLERANCE" ]; then
@@ -142,6 +145,8 @@ DATABASE_FILE=$NAME".sqlite"
 rm -f $DATABASE_FILE
 run_migenis.sh -i $BLAST_FILE -g $GENES_FILE -d $DATABASE_FILE -G $GENOMES_FILE $OPTP -A "$author" -N "$descrip" >&2
 if [ $? -eq 0 ]; then
+	cp $WORK_DIR/$DATABASE_FILE $DIR/
+	cp $WORK_DIR/$BLAST_DB $DIR/
 	echo_log "Database created: $DIR/$DATABASE_FILE"
 	echo_log "Blast database also created: $DIR/$BLASTDB"
 else
