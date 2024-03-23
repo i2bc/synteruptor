@@ -146,8 +146,8 @@ rm -f $DATABASE_FILE
 run_migenis.sh -i $BLAST_FILE -g $GENES_FILE -d $DATABASE_FILE -G $GENOMES_FILE $OPTP -A "$author" -N "$descrip" >&2
 if [ $? -eq 0 ]; then
 	cp $WORK_DIR/$DATABASE_FILE $DIR/
-	cp $WORK_DIR/$BLAST_DB $DIR/
 	echo_log "Database created: $DIR/$DATABASE_FILE"
+	cp $WORK_DIR/$BLASTDB $DIR/
 	echo_log "Blast database also created: $DIR/$BLASTDB"
 else
 	echo_log "Error: run_migenis.sh failed at some point"
