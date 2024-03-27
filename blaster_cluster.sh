@@ -7,6 +7,41 @@
 #PBS -N blaster
 #PBS -l ncpus=4
 
+
+# https://www.meziantou.net/retry-a-bash-command.htm
+# Define the retry function
+retry() {
+  local retries="$1"
+  local command="$2"
+  local options="$-" # Get the current "set" options
+
+  # Disable set -e
+  if [[ $options == *e* ]]; then
+    set +e
+  fi
+
+  # Run the command, and save the exit code
+  $command
+  local exit_code=$?
+
+  # restore initial options
+  if [[ $options == *e* ]]; then
+    set -e
+  fi
+
+  # If the exit code is non-zero (i.e. command failed), and we have not
+  # reached the maximum number of retries, run the command again
+  if [[ $exit_code -ne 0 && $retries -gt 0 ]]; then
+    retry $(($retries - 1)) "$command"
+  else
+    # Return the exit code from the command
+    return $exit_code
+  fi
+}
+
+
+
+
 # Task number needed
 : ${PBS_ARRAY_INDEX:?"Need to set PBS_ARRAY_INDEX non-empty"}
 
@@ -52,5 +87,5 @@ blastout="$dbname"-"$queryname".blast
 if [ -s $blastout ] ; then
 	echo "File $blastout already exists: no blast done. If you want to redo the comparison, just delete the file and resubmit the job (array id: $PBS_ARRAY_INDEX)."
 else
-	$blastp -db $db -query $query -evalue 1E-5 -outfmt 6 -out $blastout -num_threads 4
+	retry 3 "$blastp -db $db -query $query -evalue 1E-5 -outfmt 6 -out $blastout -num_threads 4"
 fi
