@@ -52,6 +52,8 @@ sub create_ranking_table
 		tRNA_both_ext INT DEFAULT 0,
 		content1 TEXT,
 		content2 TEXT,
+		enzymes1 INT,
+		enzymes2 INT,
 		paralogs1 INT DEFAULT 0,
 		paralogs2 INT DEFAULT 0,
 		delta_GC1 INT,
@@ -204,6 +206,8 @@ sub rank_breaks
 			'tRNA_both_ext' => both_tRNA_ext($score1, $score2),
 			'content1' => content($score1),
 			'content2' => content($score2),
+			'enzymes1' => $score1->{'enzymes'},
+			'enzymes2' => $score2->{'enzymes'},
 			'real_size1' => $score2->{'real_size'},
 			'real_size2' => $score1->{'real_size'},
 			'paralogs1' => $score1->{'paralogs'},
@@ -339,6 +343,7 @@ sub score_genes
 		'tRNA' => 0,
 		'real_size' => 0,
 		'delta_GC' => 0,
+		'enzymes' => 0,
 	);
 	my $glengths = 0;
 	
@@ -346,6 +351,9 @@ sub score_genes
 	my $end = $genes ? @$genes - 1 : 0;
 	my $i = 0;
 	foreach my $g (@$genes) {
+		if ($g->{'product'} =~ /ase\b/i) {
+			$score{'enzymes'}++;
+		}
 		if ($g->{'product'} =~ /(\b|-)(insertion|mobile element|integrase|excisionase|plasmid|DNA ligase|transposase|transfer protein)(\b|-)/i) {
 			$score{'mobile'}++;
 		}
