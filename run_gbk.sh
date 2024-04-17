@@ -83,7 +83,7 @@ mkdir -p $WORK_DIR
 # Delete any previous files with the same name
 cd $WORK_DIR
 rm ./*.tmp ./*.faa* -f
-cp $DIR/*.* $WORK_DIR/
+ln -s $DIR/*.* $WORK_DIR/
 
 # Check usable files
 n_files=$(ls *.gb* *.dat *.txt *.embl 2> /dev/null | wc -l)
