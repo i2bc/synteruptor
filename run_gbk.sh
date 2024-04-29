@@ -14,7 +14,7 @@ BLOCKS_TOLERANCE=2
 # Optionals
 descrip=""
 author=""
-JOBS=0
+JOBS=1
 
 function usage {
 	if [ -n "$1" ]; then
