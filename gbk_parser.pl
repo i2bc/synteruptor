@@ -115,6 +115,7 @@ sub parse_gbk
 			# First, read the genome and gpart data
 			my %gpart = ();
 			my $rname = $seq->display_name;
+			$rname .= "." . $seq->version if defined $seq->version;
 			$gpart{'gpart'} = $rname;
 			$gpart{'abbr'} = $abbr;
 			
