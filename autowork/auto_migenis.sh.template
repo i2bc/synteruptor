@@ -6,8 +6,7 @@
 # only one job is running at a time
 
 # This script should be run by crontab on the working machine
-
-set -ue
+set -u
 ###################################################################################################
 # DIRECTORIES
 
