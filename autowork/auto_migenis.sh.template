@@ -62,6 +62,7 @@ for s in $stats; do
 
         # Make a temp dir to work in
         workdir=`mktemp -d migenis_XXXXXXXX`
+        echo "WORKDIR = $workdir"
 
         # Copy the necessary Genbank files and uncompress
         cp $datadir/*.gb* $workdir
@@ -92,9 +93,9 @@ for s in $stats; do
             $config $s "status" "built"
 
             # Delete temp dir
-            rm $tmpdir/$workdir/temp/* -f
+            rm $workdir/temp/* -f
             rmdir $workdir/temp
-            rm $tmpdir/$workdir/* -f
+            rm $workdir/* -f
             rmdir $workdir
         else
             # Failed
