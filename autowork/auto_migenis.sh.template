@@ -92,6 +92,8 @@ for s in $stats; do
             $config $s "status" "built"
 
             # Delete temp dir
+            rm $tmpdir/$workdir/temp/* -f
+            rmdir $workdir/temp
             rm $tmpdir/$workdir/* -f
             rmdir $workdir
         else
