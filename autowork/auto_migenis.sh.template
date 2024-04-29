@@ -66,11 +66,9 @@ for s in $stats; do
         # Copy the necessary Genbank files and uncompress
         cp $datadir/*.gb* $workdir
         # Uncompress gz and zip files if necessary
-        gzip -dv $workdir/*.gz 2> /dev/null
-        #unzip -d $workdir $workdir/*.zip
+        find $workdir -name *.gz -exec gzip -d {} \;
         find $workdir -name '*.zip' -exec unzip -d $workdir {} \;
         find $workdir -name '*.zip' -exec rm -f {} \;
-        ls -l $workdir
 
         # Additional parameters?
         optp=""
@@ -80,11 +78,7 @@ for s in $stats; do
 
         # Run the creation of the Migenis database
         log_file="$work_dir/trace_file.txt"
-        time -p run_gbk.sh -i "$workdir" -n "$name" $optp -A "$author" -N "$descrip" 2> $log_file
-
-        # Store the log
-        log_str=$(sed 's/\n/\\n/g' < $log_file | sed 's/"/\"/g')
-        $config $s "trace" "$log_str"
+        time -p run_gbk.sh -i "$workdir" -n "$name" $optp -A "$author" -N "$descrip" > $log_file 2>&1
 
         # Check success
         if [ $? -eq 0 ]; then
