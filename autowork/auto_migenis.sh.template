@@ -80,7 +80,12 @@ for s in $stats; do
         fi
 
         # Run the creation of the Migenis database
-        time -p run_gbk.sh -i "$workdir" -n "$name" $optp -A "$author" -N "$descrip"
+        log_file="$work_dir/trace_file.txt"
+        time -p run_gbk.sh -i "$workdir" -n "$name" $optp -A "$author" -N "$descrip" 2> $log_file
+
+        # Store the log
+        log_str=$(sed 's/\n/\\n/g' < $log_file | sed 's/"/\"/g')
+        $config $s "trace" "$log_str"
 
         # Check success
         if [ $? -eq 0 ]; then
