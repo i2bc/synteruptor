@@ -97,6 +97,10 @@ for s in $stats; do
         else
             # Failed
             $config $s "status" "failed"
+
+            # Store the log
+            log_str=$(sed 's/\n/\\n/g' < $log_file | sed 's/"/\"/g')
+            $config $s "trace" "$log_str"
         fi
         echo "Final status: " $($config $s status)
     fi
