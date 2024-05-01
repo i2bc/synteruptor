@@ -83,3 +83,31 @@ run_gbk.sh -i /path/to/subfolder -n db_name -j 4
 
 - It will then create a database named db_name.sqlite in the subfolder, as well as a Blast DB db_name.sqlite.faa
 - Place the DB in the `db` folder of the Web Synteruptor to explore its data. Make sure the web server has permission to read the `db` folder and the database file.
+
+## Database content
+
+The database contains the following tables at initiation:
+- `genes`
+- `genomes`
+- `genome_parts`(separate DNA sequences)
+The data in those tables come from the input files.
+
+When running run_migenis.sh the following tables are populated:
+- `orthos`(orthologs and paralogs genes pairs, from BLAST BRH)
+- `info`(metadata)
+- `pairs`(orthologs and paralog pairs)
+- `blocks`(synteny blocks)
+- `breaks`(synteny breaks)
+- `breaks_genes`(all genes in a break, per species)
+- `breaks_ranking`
+- `breaks_graph` (to represent similar breaks among a group of species)
+- `goc`
+
+Additional tables and views created to ease the queries:
+- `orthos_all`(joined pairs with genes species1 and genes species2)
+- `blocks_all`(joined block, orthos pairs at start of block, end of block + genes at start and end in both species)
+- `breaks_all`(joined break, blocks left and right, orthos pairs left and right, genes at start and end un both species)
+
+The final breaks data are stored in breaks (breaks_all for more data) and breaks_ranking (contains the various attributes used for ranking).
+
+You can use sqlite3 `.schema` command to see the details of each table.
