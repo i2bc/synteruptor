@@ -5,6 +5,7 @@ Pointing `.` in the `docker/synteruptor` directory:
 ```
 docker build -t synteruptor-image .
 ```
+(Alternatively, you can also use the olespinet/synteruptor image available on Docker Hub.)
 
 ## Run the docker image
 
