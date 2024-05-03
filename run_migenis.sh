@@ -4,9 +4,6 @@
 # This program is free software under AGPLv3 license
 # License terms are in the LICENSE file, or at <http://www.gnu.org/licenses/>.
 
-# Stop with any error
-set -e
-
 BLAST=""
 GENES_DATA=""
 DATABASE=""
@@ -42,6 +39,7 @@ function usage {
 	Optional:
 	-N <str>  : database description
 	-A <str>  : database authors
+	-E <path> : path to the error log
 _EOF_
 	echo "$help"
 	echo "Defaults:"
@@ -54,7 +52,7 @@ export -f usage
 
 ####################################################
 # Run with all parameters
-while getopts "i:g:d:G:p:b:P:N:A:h" option
+while getopts "i:g:d:G:p:b:P:N:A:E:h" option
 do
 	case $option in
 		i)
@@ -84,6 +82,9 @@ do
 		A)
 			author=$OPTARG
 			;;
+		E)
+			errpath=$OPTARG
+			;;
 		h)
 			usage
 			;;
@@ -95,10 +96,10 @@ if [ -z "$DATABASE" ] ; then usage "Database needed (-d)"; fi
 if [ -z "$author" ] ; then author=""; fi
 if [ -z "$descrip" ] ; then descrip=""; fi
 if [ -z "$bre" ] ; then bre=6; fi
+if [ -z "$errpath" ] ; then errpath=$DATABASE".err"; fi
 
 ortho="orthos_"$GENES_DATA
 paro="paras_"$GENES_DATA
-errpath=$DATABASE".err"
 
 function echo_log {
 	echo "[$(date +'%F %T')] $1" 1>&2
@@ -107,9 +108,9 @@ function echo_log {
 if [ ! -s $DATABASE ]; then
 	echo_log "Compute $DATABASE"
 	echo_log "Make ortholog pairs"
-	ortholog_pairs.pl -i $BLAST -g $GENES_DATA -o $ortho || exit 1
+	ortholog_pairs.pl -i $BLAST -g $GENES_DATA -o $ortho 2>> $errpath || exit 1
 	echo_log "Find paralogs"
-	paralog_pairs.pl -i $BLAST -g $GENES_DATA -o $paro -s $para_id || exit 1
+	paralog_pairs.pl -i $BLAST -g $GENES_DATA -o $paro -s $para_id 2>> $errpath || exit 1
 	
 	# Then create the database
 	if [ -z "$GENOMES" ]; then

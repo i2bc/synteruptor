@@ -4,9 +4,6 @@
 # This program is free software under AGPLv3 license
 # License terms are in the LICENSE file, or at <http://www.gnu.org/licenses/>.
 
-# Stop with any error
-set -e
-
 DIR=""
 NAME="syntebase"
 BLOCKS_TOLERANCE=2
@@ -137,19 +134,21 @@ OPTP=""
 if [ -n "$BLOCKS_TOLERANCE" ]; then
 	OPTP="-p $BLOCKS_TOLERANCE"
 fi
-gbk_parser.pl -i "*.gb* *.dat *.txt *.embl" -o $GENES_FILE -g $GENOMES_FILE -f $BLASTDB
+gbk_parser.pl -i "*.gb* *.dat *.txt *.embl" -o $GENES_FILE -g $GENOMES_FILE -f $BLASTDB || exit 1
 
 # Run the breaks search
 echo_log "Search for breaks and create the database"
 DATABASE_FILE=$NAME".sqlite"
 rm -f $DATABASE_FILE
-run_migenis.sh -i $BLAST_FILE -g $GENES_FILE -d $DATABASE_FILE -G $GENOMES_FILE $OPTP -A "$author" -N "$descrip" >&2
+migenis_log=$NAME.error.log
+run_migenis.sh -i $BLAST_FILE -g $GENES_FILE -d $DATABASE_FILE -G $GENOMES_FILE $OPTP -A "$author" -N "$descrip" -E $migenis_log >&2
 if [ $? -eq 0 ]; then
 	cp $WORK_DIR/$DATABASE_FILE $DIR/
 	echo_log "Database created: $DIR/$DATABASE_FILE"
 	cp $WORK_DIR/$BLASTDB $DIR/
 	echo_log "Blast database also created: $DIR/$BLASTDB"
 else
-	echo_log "Error: run_migenis.sh failed at some point"
-	exit $!
+	cat $migenis_log
+	echo_log "Error: run_migenis.sh failed at some point (error $!)"
+	exit 1
 fi
