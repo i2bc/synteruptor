@@ -84,7 +84,24 @@ run_gbk.sh -i /path/to/subfolder -n db_name -j 4
 - It will then create a database named db_name.sqlite in the subfolder, as well as a Blast DB db_name.sqlite.faa
 - Place the DB in the `db` folder of the Web Synteruptor to explore its data. Make sure the web server has permission to read the `db` folder and the database file.
 
+## 3 genomes example
+
+As an example, download the gbff files for 3 genomes from NCBI:
+- Streptococcus anginosus C1051 (GCF_000463465.1)
+- Streptococcus anginosus C238 (GCF_000463505.1)
+- Streptococcus anginosus subsp. whileyi MAS624 (GCA_000478925.1)
+You can do this through [this link](https://www.ncbi.nlm.nih.gov/datasets/genome/?taxon=1353243,862971,862970).
+
+Unzip the file and move the .gbff files in a subfolder, make sure to rename each file to something meaningful.
+
+Then run the script on this subfolder as above (assuming 4 cores):
+```
+run_gbk.sh -i /path/to/subfolder -n db_name -j 4
+```
+
 ## Database content
+
+### Tables
 
 The database contains the following tables at initiation:
 - `genes`
@@ -111,3 +128,4 @@ Additional tables and views created to ease the queries:
 The final breaks data are stored in breaks (breaks_all for more data) and breaks_ranking (contains the various attributes used for ranking).
 
 You can use sqlite3 `.schema` command to see the details of each table.
+
