@@ -210,7 +210,7 @@ $dbh->do($create_genes_table);
 
 # Import genes data
 print STDERR "Import data into $genes_table table... \n";
-system("sqlite3 $opt{d} -separator '	' \".import $genes_path $genes_table\"") and die("sqlite3 is required. Abort.");
+system("sqlite3 $opt{d} -separator '	' \".import $genes_path $genes_table\"") and die("sqlite3 failed. Abort.");
 $dbh->do("DELETE FROM $genes_table WHERE sp='sp'");
 
 # Add the display pnum column
